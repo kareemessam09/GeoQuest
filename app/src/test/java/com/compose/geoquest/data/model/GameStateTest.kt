@@ -74,8 +74,8 @@ class GameStateTest {
     }
 
     @Test
-    fun `COLLECT_RADIUS_METERS is 15 meters`() {
-        assertEquals(15f, GameState.COLLECT_RADIUS_METERS)
+    fun `COLLECT_RADIUS_METERS is 20 meters`() {
+        assertEquals(20f, GameState.COLLECT_RADIUS_METERS)
     }
 
     @Test
@@ -89,7 +89,7 @@ class GameStateTest {
     }
 
     @Test
-    fun `canCollectSelected returns true when distance is within 15m`() {
+    fun `canCollectSelected returns true when distance is within 20m`() {
         val treasure = Treasure(
             id = "t1",
             name = "Test Treasure",
@@ -112,10 +112,10 @@ class GameStateTest {
         )
         assertTrue(stateInRange.canCollectSelected)
 
-        // At boundary (15m) - can collect
+        // At boundary (20m) - can collect
         val stateAtBoundary = GameState(
             selectedTreasure = treasure,
-            distanceToTarget = 15f
+            distanceToTarget = 20f
         )
         assertTrue(stateAtBoundary.canCollectSelected)
 
@@ -134,7 +134,7 @@ class GameStateTest {
     }
 
     @Test
-    fun `isNearby returns true when distance is between 15m and 100m`() {
+    fun `isNearby returns true when distance is between 20m and 100m`() {
         // Within notification range but not collection range
         val stateNearby = GameState(distanceToTarget = 50f)
         assertTrue(stateNearby.isNearby)
@@ -144,7 +144,7 @@ class GameStateTest {
         assertTrue(stateAtBoundary.isNearby)
 
         // Within collection range - not "nearby", can collect
-        val stateCanCollect = GameState(distanceToTarget = 15f)
+        val stateCanCollect = GameState(distanceToTarget = 20f)
         assertFalse(stateCanCollect.isNearby)
 
         // Too far

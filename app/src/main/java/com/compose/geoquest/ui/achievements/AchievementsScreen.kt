@@ -65,7 +65,7 @@ fun AchievementsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("🏆 Achievements") },
+                title = { Text("Achievements") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(

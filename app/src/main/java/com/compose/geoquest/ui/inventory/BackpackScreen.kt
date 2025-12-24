@@ -57,7 +57,7 @@ fun BackpackScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("🎒 Backpack") },
+                title = { Text("Backpack") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(

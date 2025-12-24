@@ -2,10 +2,8 @@ package com.compose.geoquest.ui.game
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.compose.geoquest.ui.theme.GeoQuestTheme
 import org.junit.Rule
@@ -30,7 +28,7 @@ class PermissionScreenTest {
         }
 
         composeTestRule
-            .onNodeWithText("Permissions Required")
+            .onNodeWithText("Location Permission Required")
             .assertIsDisplayed()
     }
 
@@ -56,13 +54,13 @@ class PermissionScreenTest {
         }
 
         composeTestRule
-            .onNodeWithText("Grant Permissions")
+            .onNodeWithText("Grant Location Permission")
             .assertIsDisplayed()
             .assertIsEnabled()
     }
 
     @Test
-    fun permissionScreen_displaysRationale() {
+    fun permissionScreen_displaysDescription() {
         composeTestRule.setContent {
             GeoQuestTheme {
                 PermissionScreen(onPermissionGranted = {})
@@ -70,8 +68,7 @@ class PermissionScreenTest {
         }
 
         composeTestRule
-            .onNodeWithText("To hunt for treasures, we need:", substring = true)
+            .onNodeWithText("GeoQuest is a GPS-based treasure hunting game", substring = true)
             .assertIsDisplayed()
     }
 }
-

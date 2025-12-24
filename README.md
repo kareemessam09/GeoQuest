@@ -1,6 +1,25 @@
+<p align="center">
+  <img src="app/src/main/res/drawable/logo.png" alt="GeoQuest Logo" width="150"/>
+</p>
+
 # 🗺️ GeoQuest - GPS Treasure Hunt Game
 
 A location-based Android game where players hunt for virtual treasures at real-world coordinates. Built with modern Android development practices demonstrating proficiency in GPS/Location services, Geofencing, and clean architecture.
+
+## Screenshots
+
+<p align="center">
+  <img src="permission page.png" alt="Permission Screen" width="200"/>
+  <img src="main screen.png" alt="Main Map Screen" width="200"/>
+  <img src="very close state.png" alt="Close to Treasure" width="200"/>
+  <img src="chest unlock.png" alt="Chest Unlock" width="200"/>
+</p>
+
+<p align="center">
+  <img src="inventory page.png" alt="Inventory/Backpack" width="200"/>
+  <img src="achievments page.png" alt="Achievements" width="200"/>
+  <img src="settings screen.png" alt="Settings" width="200"/>
+</p>
 
 ## 🎮 Features
 
@@ -36,12 +55,12 @@ A location-based Android game where players hunt for virtual treasures at real-w
 | **Kotlin Flows/StateFlow** | Reactive state management |
 | **OSMDroid** | OpenStreetMap SDK (free) |
 | **FusedLocationProvider** | GPS location services |
-?| **Geofencing API** | Proximity detection |
+| **Geofencing API** | Proximity detection |
 | **Foreground Service** | Background processing |
 | **BroadcastReceiver** | System events (Boot, Geofence, GPS) |
 | **Navigation Compose** | Screen navigation |
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
