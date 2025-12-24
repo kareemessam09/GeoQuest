@@ -92,7 +92,7 @@ A location-based Android game where players hunt for virtual treasures at real-w
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/GeoQuest.git
+git clone https://github.com/kareemessam09/GeoQuest.git
 cd GeoQuest
 ```
 
