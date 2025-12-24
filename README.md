@@ -36,7 +36,7 @@ A location-based Android game where players hunt for virtual treasures at real-w
 | **Kotlin Flows/StateFlow** | Reactive state management |
 | **OSMDroid** | OpenStreetMap SDK (free) |
 | **FusedLocationProvider** | GPS location services |
-?| **Geofencing API** | Proximity detection |
+| **GeoFence | **Geofencing API** | Proximity detection |
 | **Foreground Service** | Background processing |
 | **BroadcastReceiver** | System events (Boot, Geofence, GPS) |
 | **Navigation Compose** | Screen navigation |
@@ -157,12 +157,3 @@ app/src/main/java/com/compose/geoquest/
 
 MIT License - see [LICENSE](LICENSE) file.
 
-## 👨‍💻 Author
-
-**Kareem**
-
----
-
-<p align="center">
-  Made with ❤️ in Egypt 🇪🇬
-</p>
