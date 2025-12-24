@@ -7,9 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Repository for managing collected inventory items
- */
+
 @Singleton
 class InventoryRepository @Inject constructor(
     private val inventoryDao: InventoryDao
@@ -22,7 +20,6 @@ class InventoryRepository @Inject constructor(
     fun getItemCount(): Flow<Int> = inventoryDao.getItemCount()
 
     suspend fun collectTreasure(treasure: Treasure, userLat: Double, userLng: Double): Boolean {
-        // Check if already collected
         val existing = inventoryDao.getItemByTreasureId(treasure.id)
         if (existing != null) {
             return false // Already collected

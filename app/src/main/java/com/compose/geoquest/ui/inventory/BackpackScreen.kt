@@ -77,7 +77,6 @@ fun BackpackScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Stats header
             StatsHeader(
                 itemCount = itemCount,
                 totalValue = totalValue ?: 0

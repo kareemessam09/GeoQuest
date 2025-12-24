@@ -8,28 +8,23 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.compose.geoquest.MainActivity
-import com.compose.geoquest.data.model.ProximityLevel
-import com.compose.geoquest.data.model.Treasure
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Manages notifications for treasure proximity and achievements
- */
+
 @Singleton
 class ProximityNotificationManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
     companion object {
-        const val CHANNEL_ID_PROXIMITY = "proximity_channel"
         const val CHANNEL_ID_ACHIEVEMENT = "achievement_channel"
-        const val NOTIFICATION_ID_PROXIMITY = 1001
+        const val CHANNEL_ID_GEOFENCE = "geofence_channel"
         const val NOTIFICATION_ID_ACHIEVEMENT = 1002
+        const val NOTIFICATION_ID_GEOFENCE = 1003
     }
 
-    private var lastNotifiedLevel: ProximityLevel? = null
     private var isEnabled: Boolean = true
 
     init {
@@ -38,16 +33,6 @@ class ProximityNotificationManager @Inject constructor(
 
     private fun createNotificationChannels() {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        // Proximity channel
-        val proximityChannel = NotificationChannel(
-            CHANNEL_ID_PROXIMITY,
-            "Treasure Proximity",
-            NotificationManager.IMPORTANCE_DEFAULT
-        ).apply {
-            description = "Notifications when you're near a treasure"
-            enableVibration(true)
-        }
 
         // Achievement channel
         val achievementChannel = NotificationChannel(
@@ -59,8 +44,17 @@ class ProximityNotificationManager @Inject constructor(
             enableVibration(true)
         }
 
-        notificationManager.createNotificationChannel(proximityChannel)
+        val geofenceChannel = NotificationChannel(
+            CHANNEL_ID_GEOFENCE,
+            "Nearby Treasures",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Alerts when you enter a treasure zone (within 100m)"
+            enableVibration(true)
+        }
+
         notificationManager.createNotificationChannel(achievementChannel)
+        notificationManager.createNotificationChannel(geofenceChannel)
     }
 
     fun setEnabled(enabled: Boolean) {
@@ -70,55 +64,6 @@ class ProximityNotificationManager @Inject constructor(
         }
     }
 
-    /**
-     * Show notification when proximity level changes significantly
-     */
-    fun notifyProximityChange(
-        treasure: Treasure,
-        proximityLevel: ProximityLevel,
-        distanceMeters: Float
-    ) {
-        if (!isEnabled) return
-
-        // Only notify on significant proximity changes
-        if (proximityLevel == lastNotifiedLevel) return
-
-        // Only show notifications for HOT and BURNING levels
-        if (proximityLevel != ProximityLevel.HOT && proximityLevel != ProximityLevel.BURNING) {
-            // Cancel existing notification if moving away
-            if (lastNotifiedLevel == ProximityLevel.HOT || lastNotifiedLevel == ProximityLevel.BURNING) {
-                cancelProximityNotification()
-            }
-            lastNotifiedLevel = proximityLevel
-            return
-        }
-
-        lastNotifiedLevel = proximityLevel
-
-        val (title, message) = when (proximityLevel) {
-            ProximityLevel.BURNING -> Pair(
-                "🔥 You're HERE!",
-                "\"${treasure.name}\" is within reach! Open the app to collect it!"
-            )
-            ProximityLevel.HOT -> Pair(
-                "🔥 Getting Hot!",
-                "\"${treasure.name}\" is only ${distanceMeters.toInt()}m away!"
-            )
-            else -> return
-        }
-
-        showNotification(
-            channelId = CHANNEL_ID_PROXIMITY,
-            notificationId = NOTIFICATION_ID_PROXIMITY,
-            title = title,
-            message = message,
-            ongoing = proximityLevel == ProximityLevel.BURNING
-        )
-    }
-
-    /**
-     * Show achievement unlocked notification
-     */
     fun notifyAchievementUnlocked(achievementTitle: String, achievementDescription: String) {
         if (!isEnabled) return
 
@@ -128,6 +73,32 @@ class ProximityNotificationManager @Inject constructor(
             title = "🏆 Achievement Unlocked!",
             message = "$achievementTitle - $achievementDescription",
             ongoing = false
+        )
+    }
+
+
+    fun notifyGeofenceEntered(treasureId: String, treasureName: String) {
+        if (!isEnabled) return
+
+        showNotification(
+            channelId = CHANNEL_ID_GEOFENCE,
+            notificationId = NOTIFICATION_ID_GEOFENCE,
+            title = "📍 Treasure Nearby!",
+            message = "You're within 100m of \"$treasureName\"! Open the app to hunt it down!",
+            ongoing = false
+        )
+    }
+
+
+    fun notifyTreasureVeryClose(treasureId: String, treasureName: String) {
+        if (!isEnabled) return
+
+        showNotification(
+            channelId = CHANNEL_ID_GEOFENCE,
+            notificationId = NOTIFICATION_ID_GEOFENCE,
+            title = "🔥 Treasure Very Close!",
+            message = "\"$treasureName\" is right here! Open the app NOW to collect it!",
+            ongoing = true
         )
     }
 
@@ -153,7 +124,7 @@ class ProximityNotificationManager @Inject constructor(
             .setSmallIcon(android.R.drawable.ic_dialog_map)
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(!ongoing)
             .setOngoing(ongoing)
@@ -166,14 +137,12 @@ class ProximityNotificationManager @Inject constructor(
         }
     }
 
-    fun cancelProximityNotification() {
-        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID_PROXIMITY)
-        lastNotifiedLevel = null
+    fun cancelGeofenceNotification() {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID_GEOFENCE)
     }
 
     fun cancelAll() {
         NotificationManagerCompat.from(context).cancelAll()
-        lastNotifiedLevel = null
     }
 }
 

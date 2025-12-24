@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AchievementsViewModel @Inject constructor(
-    private val achievementRepository: AchievementRepository
+    achievementRepository: AchievementRepository
 ) : ViewModel() {
 
     val achievements: StateFlow<List<Achievement>> = achievementRepository

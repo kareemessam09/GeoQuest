@@ -25,9 +25,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backpack
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -60,7 +60,14 @@ import com.compose.geoquest.data.model.GameState
 import com.compose.geoquest.data.model.ProximityLevel
 import com.compose.geoquest.data.model.toProximityLevel
 import com.compose.geoquest.receiver.GpsStatusReceiver
+import com.compose.geoquest.service.GeofenceMonitorService
 import com.compose.geoquest.ui.components.AchievementNotification
+import com.compose.geoquest.ui.theme.CommonGray
+import com.compose.geoquest.ui.theme.InfoBlue
+import com.compose.geoquest.ui.theme.ProximityCool
+import com.compose.geoquest.ui.theme.ProximityHot
+import com.compose.geoquest.ui.theme.ProximityWarm
+import com.compose.geoquest.ui.theme.SuccessGreen
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -68,6 +75,8 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.drawable.toDrawable
 
 @Composable
 fun MapScreen(
@@ -78,28 +87,25 @@ fun MapScreen(
 ) {
     val context = LocalContext.current
     val gameState by viewModel.gameState.collectAsState()
-    val isDebugMode by viewModel.isDebugMode.collectAsState()
     val showTreasureDialog by viewModel.showTreasureDialog.collectAsState()
     val collectedTreasure by viewModel.collectedTreasure.collectAsState()
     val unlockedAchievement by viewModel.unlockedAchievement.collectAsState()
 
-    // GPS status from BroadcastReceiver (real-time updates)
     val isGpsEnabled by GpsStatusReceiver.isGpsEnabled.collectAsState()
     var showGpsDialog by remember { mutableStateOf(false) }
 
-    // Initial GPS check and register for updates
+    var hasInitiallyCentered by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         GpsStatusReceiver.checkGpsStatus(context)
     }
 
-    // Show dialog when GPS is disabled (reacts to broadcast)
     LaunchedEffect(isGpsEnabled) {
         if (!isGpsEnabled) {
             showGpsDialog = true
         }
     }
 
-    // GPS Enable Dialog
     if (showGpsDialog && !isGpsEnabled) {
         AlertDialog(
             onDismissRequest = { showGpsDialog = false },
@@ -125,7 +131,6 @@ fun MapScreen(
         )
     }
 
-    // Initialize osmdroid configuration
     LaunchedEffect(Unit) {
         Configuration.getInstance().apply {
             load(context, context.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
@@ -137,47 +142,44 @@ fun MapScreen(
             tileFileSystemMaxQueueSize = 16
         }
         viewModel.startLocationUpdates()
+
+        // Start background geofence service
+        GeofenceMonitorService.start(context)
     }
 
-    // Create and remember the MapView
     val mapView = remember {
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(17.0)
-            // Optimize rendering
             isTilesScaledToDpi = true
             setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
         }
     }
 
-    // My location overlay
     val myLocationOverlay = remember {
         MyLocationNewOverlay(GpsMyLocationProvider(context), mapView).apply {
             enableMyLocation()
-            enableFollowLocation()
         }
     }
 
-    // Add overlays
     LaunchedEffect(mapView) {
         mapView.overlays.add(myLocationOverlay)
     }
 
-    // Update map when user location changes
     LaunchedEffect(gameState.userLatitude, gameState.userLongitude) {
         if (gameState.userLatitude != null && gameState.userLongitude != null) {
-            val userPoint = GeoPoint(gameState.userLatitude!!, gameState.userLongitude!!)
-            mapView.controller.animateTo(userPoint)
+            if (!hasInitiallyCentered) {
+                val userPoint = GeoPoint(gameState.userLatitude!!, gameState.userLongitude!!)
+                mapView.controller.animateTo(userPoint)
+                hasInitiallyCentered = true
+            }
         }
     }
 
-    // Update treasure markers
     LaunchedEffect(gameState.treasures, gameState.selectedTreasure) {
-        // Remove old treasure markers (keep my location overlay)
         mapView.overlays.removeAll { it is Marker }
 
-        // Add treasure markers
         gameState.treasures.forEach { treasure ->
             val marker = Marker(mapView).apply {
                 position = GeoPoint(treasure.latitude, treasure.longitude)
@@ -185,12 +187,10 @@ fun MapScreen(
                 title = treasure.name
                 snippet = "Tap to navigate"
 
-                // Create custom sized icon
                 val isSelected = gameState.selectedTreasure?.id == treasure.id
-                val iconSize = if (isSelected) 48 else 36 // Size in dp
+                val iconSize = if (isSelected) 48 else 36
                 val emoji = if (isSelected) "📍" else "💰"
 
-                // Create text bitmap with custom size
                 val paint = android.graphics.Paint().apply {
                     textSize = iconSize * context.resources.displayMetrics.density
                     isAntiAlias = true
@@ -198,15 +198,11 @@ fun MapScreen(
                 val textWidth = paint.measureText(emoji).toInt().coerceAtLeast(1)
                 val textHeight = (paint.descent() - paint.ascent()).toInt().coerceAtLeast(1)
 
-                val bitmap = android.graphics.Bitmap.createBitmap(
-                    textWidth,
-                    textHeight,
-                    android.graphics.Bitmap.Config.ARGB_8888
-                )
+                val bitmap = createBitmap(textWidth, textHeight)
                 val canvas = android.graphics.Canvas(bitmap)
                 canvas.drawText(emoji, 0f, -paint.ascent(), paint)
 
-                icon = android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+                icon = bitmap.toDrawable(context.resources)
 
                 setOnMarkerClickListener { _, _ ->
                     viewModel.selectTreasure(treasure)
@@ -218,28 +214,6 @@ fun MapScreen(
         mapView.invalidate()
     }
 
-    // Handle debug mode map clicks
-    DisposableEffect(isDebugMode) {
-        if (isDebugMode) {
-            val tapOverlay = object : org.osmdroid.views.overlay.Overlay() {
-                override fun onSingleTapConfirmed(e: android.view.MotionEvent?, mapView: MapView?): Boolean {
-                    if (e != null && mapView != null) {
-                        val projection = mapView.projection
-                        val geoPoint = projection.fromPixels(e.x.toInt(), e.y.toInt()) as GeoPoint
-                        viewModel.teleportTo(geoPoint.latitude, geoPoint.longitude)
-                        return true
-                    }
-                    return false
-                }
-            }
-            mapView.overlays.add(0, tapOverlay)
-            onDispose {
-                mapView.overlays.remove(tapOverlay)
-            }
-        } else {
-            onDispose { }
-        }
-    }
 
     // Cleanup
     DisposableEffect(Unit) {
@@ -256,36 +230,15 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Top bar with debug toggle and backpack
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(WindowInsets.statusBars.asPaddingValues())
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .align(Alignment.TopCenter),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            // Debug mode toggle
-            IconButton(
-                onClick = { viewModel.toggleDebugMode() },
-                modifier = Modifier
-                    .background(
-                        if (isDebugMode) MaterialTheme.colorScheme.errorContainer
-                        else MaterialTheme.colorScheme.surface,
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    Icons.Default.BugReport,
-                    contentDescription = "Debug Mode",
-                    tint = if (isDebugMode) MaterialTheme.colorScheme.error
-                           else MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            // Right side buttons
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Achievements button
                 IconButton(
                     onClick = onNavigateToAchievements,
                     modifier = Modifier.background(
@@ -329,6 +282,22 @@ fun MapScreen(
             }
         }
 
+        // Respawn Treasures FAB
+        FloatingActionButton(
+            onClick = { viewModel.respawnTreasures() },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(WindowInsets.navigationBars.asPaddingValues())
+                .padding(end = 16.dp, bottom = 190.dp),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = "Respawn Treasures",
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+
         // My Location FAB
         FloatingActionButton(
             onClick = {
@@ -346,23 +315,6 @@ fun MapScreen(
             Icon(Icons.Default.MyLocation, contentDescription = "My Location")
         }
 
-        // Debug mode indicator
-        if (isDebugMode) {
-            Text(
-                text = "DEBUG MODE - Tap map to teleport",
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(WindowInsets.statusBars.asPaddingValues())
-                    .padding(top = 60.dp)
-                    .background(
-                        MaterialTheme.colorScheme.errorContainer,
-                        RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                style = MaterialTheme.typography.labelMedium
-            )
-        }
 
         // Distance indicator and unlock button
         AnimatedVisibility(
@@ -410,12 +362,18 @@ fun DistanceCard(
     val proximityLevel = distance.toProximityLevel()
 
     val backgroundColor = when (proximityLevel) {
-        ProximityLevel.BURNING -> Color(0xFF4CAF50)  // Green
-        ProximityLevel.HOT -> Color(0xFFF44336)       // Red
-        ProximityLevel.WARM -> Color(0xFFFF9800)      // Orange
-        ProximityLevel.COOL -> Color(0xFFFFEB3B)      // Yellow
-        ProximityLevel.COLD -> Color(0xFF2196F3)      // Blue
-        ProximityLevel.FREEZING -> Color(0xFF9E9E9E)  // Gray
+        ProximityLevel.BURNING -> SuccessGreen        // Green - Can collect!
+        ProximityLevel.HOT -> ProximityHot            // Red
+        ProximityLevel.WARM -> ProximityWarm          // Orange
+        ProximityLevel.COOL -> ProximityCool          // Yellow
+        ProximityLevel.COLD -> InfoBlue               // Blue
+        ProximityLevel.FREEZING -> CommonGray         // Gray
+    }
+
+    // Text color that contrasts with background
+    val textOnBackground = when (proximityLevel) {
+        ProximityLevel.COOL -> Color.Black  // Yellow needs dark text
+        else -> Color.White
     }
 
     Card(
@@ -433,7 +391,7 @@ fun DistanceCard(
                 text = gameState.selectedTreasure?.name ?: "Unknown Treasure",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = textOnBackground
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -448,7 +406,7 @@ fun DistanceCard(
                     },
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = textOnBackground
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -463,7 +421,7 @@ fun DistanceCard(
                         ProximityLevel.FREEZING -> "❄️❄️ Freezing"
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = textOnBackground
                 )
             }
 
@@ -476,23 +434,28 @@ fun DistanceCard(
                 Button(
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White.copy(alpha = 0.3f)
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                     )
                 ) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = textOnBackground)
                 }
 
                 Button(
                     onClick = onCollect,
-                    enabled = gameState.isInRange,
+                    enabled = gameState.canCollectSelected,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        disabledContainerColor = Color.White.copy(alpha = 0.3f)
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                     )
                 ) {
+                    val buttonText = when {
+                        gameState.canCollectSelected -> "🎁 Open Chest!"
+                        gameState.isNearby -> "Getting close... (< 15m to collect)"
+                        else -> "Get Closer (< 15m)"
+                    }
                     Text(
-                        text = if (gameState.isInRange) "🎁 Open Chest!" else "Get Closer",
-                        color = if (gameState.isInRange) backgroundColor else Color.White
+                        text = buttonText,
+                        color = if (gameState.canCollectSelected) backgroundColor else textOnBackground
                     )
                 }
             }

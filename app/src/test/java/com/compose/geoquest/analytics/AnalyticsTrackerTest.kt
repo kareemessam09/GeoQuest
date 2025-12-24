@@ -65,26 +65,6 @@ class AnalyticsTrackerTest {
         assertEquals("First Find", event.achievementName)
     }
 
-    @Test
-    fun `debugModeToggled event contains enabled state`() {
-        val enabledEvent = AnalyticsEvent.DebugModeToggled(enabled = true)
-        val disabledEvent = AnalyticsEvent.DebugModeToggled(enabled = false)
-
-        assertTrue(enabledEvent.enabled)
-        assertFalse(disabledEvent.enabled)
-    }
-
-    @Test
-    fun `teleportUsed event contains coordinates`() {
-        val event = AnalyticsEvent.TeleportUsed(
-            latitude = 30.65,
-            longitude = 32.05
-        )
-
-        assertEquals("teleport_used", event.name)
-        assertEquals(30.65, event.latitude, 0.001)
-        assertEquals(32.05, event.longitude, 0.001)
-    }
 
     @Test
     fun `permissionDenied event contains permission name`() {

@@ -30,10 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.compose.geoquest.data.model.Achievement
 import kotlinx.coroutines.delay
 
-/**
- * Achievement unlocked notification banner
- * Shows temporarily when an achievement is unlocked
- */
+
 @Composable
 fun AchievementNotification(
     achievement: Achievement?,

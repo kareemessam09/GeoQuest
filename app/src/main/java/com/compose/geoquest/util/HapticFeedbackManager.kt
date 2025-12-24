@@ -10,9 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Manages haptic feedback for proximity-based interactions
- */
+
 @Singleton
 class HapticFeedbackManager @Inject constructor(
     @ApplicationContext private val context: Context
@@ -37,9 +35,7 @@ class HapticFeedbackManager @Inject constructor(
         }
     }
 
-    /**
-     * Provides haptic feedback based on proximity level
-     */
+
     fun vibrateForProximity(level: ProximityLevel) {
         if (!isEnabled) return
         if (level == lastProximityLevel) return

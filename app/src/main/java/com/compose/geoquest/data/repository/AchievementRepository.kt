@@ -13,19 +13,12 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Repository for managing achievements and user statistics
- * Demonstrates complex business logic and reactive streams
- */
 @Singleton
 class AchievementRepository @Inject constructor(
     private val achievementDao: AchievementDao,
     private val userStatsDao: UserStatsDao
 ) {
 
-    /**
-     * Get all achievements with their unlock status
-     */
     fun getAllAchievements(): Flow<List<Achievement>> {
         return achievementDao.getAllUnlockedAchievements().map { unlockedList ->
             val unlockedIds = unlockedList.associate { it.id to it.unlockedAt }
@@ -39,21 +32,13 @@ class AchievementRepository @Inject constructor(
         }
     }
 
-    /**
-     * Get user statistics
-     */
     fun getUserStats(): Flow<UserStatsEntity?> = userStatsDao.getStats()
 
-    /**
-     * Check and unlock any newly earned achievements
-     * Returns list of newly unlocked achievements
-     */
     suspend fun checkAndUnlockAchievements(): List<Achievement> {
         val stats = userStatsDao.getStatsOnce() ?: return emptyList()
         val newlyUnlocked = mutableListOf<Achievement>()
 
         for (achievement in Achievements.ALL) {
-            // Skip if already unlocked
             if (achievementDao.getAchievement(achievement.id) != null) continue
 
             val shouldUnlock = when (val req = achievement.requirement) {
@@ -88,18 +73,14 @@ class AchievementRepository @Inject constructor(
         return newlyUnlocked
     }
 
-    /**
-     * Initialize user stats if not exists
-     */
+
     suspend fun initializeStats() {
         if (userStatsDao.getStatsOnce() == null) {
             userStatsDao.insertOrUpdate(UserStatsEntity())
         }
     }
 
-    /**
-     * Record treasure collection for stats
-     */
+
     suspend fun recordTreasureCollected(points: Int, collectionTimeMs: Long) {
         initializeStats()
         userStatsDao.incrementTreasureCollected(points)
@@ -107,9 +88,7 @@ class AchievementRepository @Inject constructor(
         userStatsDao.updateLastPlayDate()
     }
 
-    /**
-     * Record distance walked
-     */
+
     suspend fun recordDistanceWalked(meters: Float) {
         initializeStats()
         userStatsDao.addDistance(meters)
@@ -117,9 +96,7 @@ class AchievementRepository @Inject constructor(
 
     fun getUnlockedCount(): Flow<Int> = achievementDao.getUnlockedCount()
 
-    /**
-     * Get achievement progress as percentage
-     */
+
     fun getAchievementProgress(): Flow<Float> {
         return achievementDao.getUnlockedCount().map { unlocked ->
             unlocked.toFloat() / Achievements.ALL.size

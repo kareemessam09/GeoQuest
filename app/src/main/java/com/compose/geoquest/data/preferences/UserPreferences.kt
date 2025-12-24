@@ -13,13 +13,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// Extension property for DataStore
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-/**
- * User preferences using Jetpack DataStore
- * Demonstrates modern preference storage (replacement for SharedPreferences)
- */
 @Singleton
 class UserPreferences @Inject constructor(
     @ApplicationContext private val context: Context
@@ -29,14 +24,11 @@ class UserPreferences @Inject constructor(
         val HAPTIC_ENABLED = booleanPreferencesKey("haptic_enabled")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
         val HIGH_ACCURACY_MODE = booleanPreferencesKey("high_accuracy_mode")
-        val DARK_MODE = stringPreferencesKey("dark_mode") // "system", "light", "dark"
-        val MAP_STYLE = stringPreferencesKey("map_style")
+        val DARK_MODE = stringPreferencesKey("dark_mode")
         val NOTIFICATION_ENABLED = booleanPreferencesKey("notification_enabled")
-        val UNITS = stringPreferencesKey("units") // "metric", "imperial"
-        val LANGUAGE = stringPreferencesKey("language")
+        val UNITS = stringPreferencesKey("units")
     }
 
-    // Haptic Feedback
     val hapticEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[Keys.HAPTIC_ENABLED] ?: true
     }
@@ -47,7 +39,6 @@ class UserPreferences @Inject constructor(
         }
     }
 
-    // Sound Effects
     val soundEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[Keys.SOUND_ENABLED] ?: true
     }
@@ -58,7 +49,6 @@ class UserPreferences @Inject constructor(
         }
     }
 
-    // High Accuracy Mode (more battery, better GPS)
     val highAccuracyMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[Keys.HIGH_ACCURACY_MODE] ?: true
     }
@@ -69,7 +59,6 @@ class UserPreferences @Inject constructor(
         }
     }
 
-    // Theme Mode
     val darkMode: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[Keys.DARK_MODE] ?: "system"
     }
@@ -80,7 +69,6 @@ class UserPreferences @Inject constructor(
         }
     }
 
-    // Notifications
     val notificationEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[Keys.NOTIFICATION_ENABLED] ?: true
     }
@@ -90,6 +78,7 @@ class UserPreferences @Inject constructor(
             prefs[Keys.NOTIFICATION_ENABLED] = enabled
         }
     }
+
 
     // Distance Units
     val units: Flow<String> = context.dataStore.data.map { prefs ->
@@ -102,4 +91,3 @@ class UserPreferences @Inject constructor(
         }
     }
 }
-

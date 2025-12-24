@@ -3,10 +3,7 @@ package com.compose.geoquest.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-/**
- * Room entity for storing spawned treasures
- * Treasures are generated dynamically around user's location
- */
+
 @Entity(tableName = "spawned_treasures")
 data class SpawnedTreasureEntity(
     @PrimaryKey

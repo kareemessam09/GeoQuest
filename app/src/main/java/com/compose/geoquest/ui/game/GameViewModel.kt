@@ -3,7 +3,6 @@ package com.compose.geoquest.ui.game
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.compose.geoquest.BuildConfig
 import com.compose.geoquest.data.model.Achievement
 import com.compose.geoquest.data.model.GameState
 import com.compose.geoquest.data.model.Treasure
@@ -13,11 +12,13 @@ import com.compose.geoquest.data.repository.AchievementRepository
 import com.compose.geoquest.data.repository.InventoryRepository
 import com.compose.geoquest.data.repository.LocationRepository
 import com.compose.geoquest.data.repository.TreasureSpawner
-import com.compose.geoquest.service.TreasureHuntService
+import com.compose.geoquest.receiver.GeofenceEvent
+import com.compose.geoquest.receiver.GeofenceEventBus
+import com.compose.geoquest.util.GeofenceManager
 import com.compose.geoquest.util.HapticFeedbackManager
 import com.compose.geoquest.util.ProximityNotificationManager
+import com.compose.geoquest.util.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,21 +29,20 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GameViewModel @Inject constructor(
-    @ApplicationContext private val context: android.content.Context,
     private val locationRepository: LocationRepository,
     private val treasureSpawner: TreasureSpawner,
     private val inventoryRepository: InventoryRepository,
     private val achievementRepository: AchievementRepository,
     private val hapticFeedbackManager: HapticFeedbackManager,
     private val notificationManager: ProximityNotificationManager,
-    private val userPreferences: UserPreferences
+    private val soundManager: SoundManager,
+    private val userPreferences: UserPreferences,
+    private val geofenceManager: GeofenceManager
 ) : ViewModel() {
 
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
 
-    private val _isDebugMode = MutableStateFlow(BuildConfig.DEBUG_MODE)
-    val isDebugMode: StateFlow<Boolean> = _isDebugMode.asStateFlow()
 
     private val _showTreasureDialog = MutableStateFlow(false)
     val showTreasureDialog: StateFlow<Boolean> = _showTreasureDialog.asStateFlow()
@@ -50,25 +50,56 @@ class GameViewModel @Inject constructor(
     private val _collectedTreasure = MutableStateFlow<Treasure?>(null)
     val collectedTreasure: StateFlow<Treasure?> = _collectedTreasure.asStateFlow()
 
-    // Achievement notification
     private val _unlockedAchievement = MutableStateFlow<Achievement?>(null)
     val unlockedAchievement: StateFlow<Achievement?> = _unlockedAchievement.asStateFlow()
 
-    // Track when treasure was selected for speed runner achievement
+    // Track for speed runner achievement
     private var treasureSelectedTime: Long = 0L
 
-    // Track if initial spawn has been done
     private var hasSpawnedInitialTreasures = false
+    private var registeredGeofenceIds = mutableSetOf<String>()
 
-    // Track last location for distance calculation
     private var lastLocation: Location? = null
+
+    // Geofence event listener
+    private val geofenceListener: (GeofenceEvent) -> Unit = { event ->
+        handleGeofenceEvent(event)
+    }
 
     init {
         initializeStats()
         observeTreasures()
         observePreferences()
-        if (_isDebugMode.value) {
-            locationRepository.setDebugMode(true)
+        setupGeofenceListener()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        GeofenceEventBus.removeListener(geofenceListener)
+    }
+
+    private fun setupGeofenceListener() {
+        GeofenceEventBus.addListener(geofenceListener)
+    }
+
+    private fun handleGeofenceEvent(event: GeofenceEvent) {
+        when (event) {
+            is GeofenceEvent.Entered -> {
+                // User entered a treasure zone - update UI
+                val treasureIds = event.treasureIds
+                _gameState.update { state ->
+                    state.copy(nearbyTreasureIds = state.nearbyTreasureIds + treasureIds)
+                }
+                hapticFeedbackManager.vibrateForProximity(com.compose.geoquest.data.model.ProximityLevel.WARM)
+                soundManager.playTreasureNearby()
+            }
+            is GeofenceEvent.Exited -> {
+                // User exited a treasure zone
+                val treasureIds = event.treasureIds
+                _gameState.update { state ->
+                    state.copy(nearbyTreasureIds = state.nearbyTreasureIds - treasureIds.toSet())
+                }
+            }
         }
     }
 
@@ -78,9 +109,7 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Observe user preferences and update managers accordingly
-     */
+
     private fun observePreferences() {
         viewModelScope.launch {
             userPreferences.hapticEnabled.collect { enabled ->
@@ -92,11 +121,14 @@ class GameViewModel @Inject constructor(
                 notificationManager.setEnabled(enabled)
             }
         }
+        viewModelScope.launch {
+            userPreferences.soundEnabled.collect { enabled ->
+                soundManager.setEnabled(enabled)
+            }
+        }
     }
 
-    /**
-     * Observe treasures from the spawner
-     */
+
     private fun observeTreasures() {
         viewModelScope.launch {
             treasureSpawner.getAvailableTreasures()
@@ -105,13 +137,26 @@ class GameViewModel @Inject constructor(
                         treasures = treasures,
                         isLoading = false
                     )}
+
+                    val newTreasures = treasures.filter { it.id !in registeredGeofenceIds }
+                    if (newTreasures.isNotEmpty()) {
+                        registerGeofencesForTreasures(newTreasures)
+                    }
                 }
         }
     }
 
-    /**
-     * Spawn treasures around user's location (called on first location update)
-     */
+    private fun registerGeofencesForTreasures(treasures: List<Treasure>) {
+        geofenceManager.addGeofences(
+            treasures = treasures,
+            onSuccess = {
+                registeredGeofenceIds.addAll(treasures.map { it.id })
+            },
+            onFailure = { }
+        )
+    }
+
+
     private suspend fun spawnTreasuresIfNeeded(userLat: Double, userLng: Double) {
         if (!hasSpawnedInitialTreasures) {
             hasSpawnedInitialTreasures = true
@@ -119,23 +164,20 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Force respawn treasures around current location
-     */
+
     fun respawnTreasures() {
         val state = _gameState.value
         val lat = state.userLatitude ?: return
         val lng = state.userLongitude ?: return
 
         viewModelScope.launch {
+            geofenceManager.removeAllGeofences()
+            registeredGeofenceIds.clear()
             treasureSpawner.respawnTreasures(lat, lng)
         }
     }
 
-    /**
-     * Start listening to location updates
-     * Should be called when location permission is granted
-     */
+
     fun startLocationUpdates() {
         viewModelScope.launch {
             locationRepository.getLocationUpdates()
@@ -150,11 +192,13 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    private var lastNotifiedTreasureId: String? = null
+
     private fun updateUserLocation(location: Location) {
-        // Calculate distance walked since last update
+        // distance walked
         lastLocation?.let { prevLocation ->
             val distanceWalked = prevLocation.distanceTo(location)
-            // Only record if moved more than 1 meter (filter out GPS noise)
+            // Only record if moved more than 1 meter
             if (distanceWalked > 1f && distanceWalked < 100f) {
                 viewModelScope.launch {
                     achievementRepository.recordDistanceWalked(distanceWalked)
@@ -168,35 +212,37 @@ class GameViewModel @Inject constructor(
             val distance = selectedTreasure?.let {
                 location.distanceTo(it.toLocation())
             }
-            val isInRange = distance != null && distance <= GameState.UNLOCK_RADIUS_METERS
 
-            // Trigger haptic feedback and notifications based on proximity
             if (selectedTreasure != null && distance != null) {
                 val proximityLevel = distance.toProximityLevel()
-
-                // Haptic feedback
                 hapticFeedbackManager.vibrateForProximity(proximityLevel)
 
-                // Notification when getting close
-                notificationManager.notifyProximityChange(
-                    treasure = selectedTreasure,
-                    proximityLevel = proximityLevel,
-                    distanceMeters = distance
-                )
+                if (distance <= GameState.NOTIFICATION_RADIUS_METERS &&
+                    lastNotifiedTreasureId != selectedTreasure.id) {
+                    lastNotifiedTreasureId = selectedTreasure.id
+                    notificationManager.notifyGeofenceEntered(
+                        treasureId = selectedTreasure.id,
+                        treasureName = selectedTreasure.name
+                    )
+                }
+
+                if (distance <= GameState.COLLECT_RADIUS_METERS) {
+                    notificationManager.notifyTreasureVeryClose(
+                        treasureId = selectedTreasure.id,
+                        treasureName = selectedTreasure.name
+                    )
+                }
             }
 
             state.copy(
                 userLatitude = location.latitude,
                 userLongitude = location.longitude,
-                distanceToTarget = distance,
-                isInRange = isInRange
+                distanceToTarget = distance
             )
         }
     }
 
-    /**
-     * Select a treasure to navigate to
-     */
+
     fun selectTreasure(treasure: Treasure) {
         treasureSelectedTime = System.currentTimeMillis()
         _gameState.update { state ->
@@ -208,78 +254,57 @@ class GameViewModel @Inject constructor(
             } else null
 
             val distance = userLocation?.distanceTo(treasure.toLocation())
-            val isInRange = distance != null && distance <= GameState.UNLOCK_RADIUS_METERS
 
             state.copy(
                 selectedTreasure = treasure,
-                distanceToTarget = distance,
-                isInRange = isInRange
+                distanceToTarget = distance
             )
         }
-
-        // Start background tracking service
-        TreasureHuntService.startTracking(
-            context = context,
-            treasureId = treasure.id,
-            treasureName = treasure.name,
-            treasureLat = treasure.latitude,
-            treasureLng = treasure.longitude
-        )
     }
 
-    /**
-     * Clear the selected treasure
-     */
-    fun clearSelection() {
-        // Stop background tracking
-        TreasureHuntService.stopTracking(context)
 
-        notificationManager.cancelProximityNotification()
+    fun clearSelection() {
+        lastNotifiedTreasureId = null
         hapticFeedbackManager.cancel()
+        notificationManager.cancelGeofenceNotification()
         _gameState.update { it.copy(
             selectedTreasure = null,
-            distanceToTarget = null,
-            isInRange = false
+            distanceToTarget = null
         )}
     }
 
-    /**
-     * Attempt to collect the treasure
-     * Only succeeds if user is within range
-     */
+
     fun collectTreasure() {
         val state = _gameState.value
         val treasure = state.selectedTreasure ?: return
         val userLat = state.userLatitude ?: return
         val userLng = state.userLongitude ?: return
 
-        if (!state.isInRange) return
+        // Use geofence-based check (100m radius)
+        if (!state.canCollectSelected) return
 
         val collectionTimeMs = System.currentTimeMillis() - treasureSelectedTime
 
         viewModelScope.launch {
-            // Mark as collected in spawner
             treasureSpawner.markTreasureCollected(treasure.id)
 
-            // Save to inventory
             val success = inventoryRepository.collectTreasure(treasure, userLat, userLng)
             if (success) {
-                // Stop background tracking
-                TreasureHuntService.stopTracking(context)
+                geofenceManager.removeGeofence(treasure.id)
+                registeredGeofenceIds.remove(treasure.id)
 
                 // Success feedback
                 hapticFeedbackManager.vibrateSuccess()
-                notificationManager.cancelProximityNotification()
+                soundManager.playTreasureFound()
+                notificationManager.cancelGeofenceNotification()
 
                 _collectedTreasure.value = treasure
                 _showTreasureDialog.value = true
 
-                // Clear selection (treasures list updates automatically via Flow)
                 _gameState.update {
                     it.copy(
                         selectedTreasure = null,
-                        distanceToTarget = null,
-                        isInRange = false
+                        distanceToTarget = null
                     )
                 }
 
@@ -289,14 +314,12 @@ class GameViewModel @Inject constructor(
                     collectionTimeMs = collectionTimeMs
                 )
 
-                // Check for newly unlocked achievements
                 val newAchievements = achievementRepository.checkAndUnlockAchievements()
                 if (newAchievements.isNotEmpty()) {
                     val achievement = newAchievements.first()
-                    // Show the first unlocked achievement
+                    soundManager.playAchievementUnlocked()
                     _unlockedAchievement.value = achievement
 
-                    // Achievement haptic and notification
                     hapticFeedbackManager.vibrateAchievement()
                     notificationManager.notifyAchievementUnlocked(
                         achievementTitle = achievement.title,
@@ -314,23 +337,6 @@ class GameViewModel @Inject constructor(
     fun dismissTreasureDialog() {
         _showTreasureDialog.value = false
         _collectedTreasure.value = null
-    }
-
-    // ===== DEBUG MODE FUNCTIONS =====
-
-    fun toggleDebugMode() {
-        _isDebugMode.update { !it }
-        locationRepository.setDebugMode(_isDebugMode.value)
-    }
-
-    /**
-     * Teleport to a location (debug mode only)
-     * Used for testing without physically moving
-     */
-    fun teleportTo(latitude: Double, longitude: Double) {
-        if (_isDebugMode.value) {
-            locationRepository.setDebugLocation(latitude, longitude)
-        }
     }
 }
 

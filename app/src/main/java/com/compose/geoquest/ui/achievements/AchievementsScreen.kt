@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.compose.geoquest.data.local.UserStatsEntity
 import com.compose.geoquest.data.model.Achievement
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -96,14 +97,12 @@ fun AchievementsScreen(
                 )
             }
 
-            // Stats Card
             item {
                 userStats?.let { stats ->
                     StatsCard(stats)
                 }
             }
 
-            // Achievements List
             item {
                 Text(
                     text = "All Achievements",
@@ -172,7 +171,7 @@ fun ProgressHeader(
 }
 
 @Composable
-fun StatsCard(stats: com.compose.geoquest.data.local.UserStatsEntity) {
+fun StatsCard(stats: UserStatsEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(

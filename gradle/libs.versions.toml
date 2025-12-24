@@ -38,6 +38,7 @@ datastore = "1.1.1"
 coroutines-test = "1.8.1"
 mockk = "1.13.12"
 turbine = "1.1.0"
+hiltCommon = "1.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -64,7 +65,7 @@ hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-com
 # Google Play Services Location (still free)
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
-# OSMDroid (Free OpenStreetMap - no API key needed!)
+# OSMDroid (Free OpenStreetMap)
 osmdroid = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
 
 # Room
@@ -86,6 +87,7 @@ accompanist-permissions = { group = "com.google.accompanist", name = "accompanis
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-test" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+androidx-hilt-common = { group = "androidx.hilt", name = "hilt-common", version.ref = "hiltCommon" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

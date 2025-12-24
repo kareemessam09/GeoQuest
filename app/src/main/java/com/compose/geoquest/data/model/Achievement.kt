@@ -1,9 +1,6 @@
 package com.compose.geoquest.data.model
 
-/**
- * Achievement system - gamification feature
- * Demonstrates domain modeling and game design patterns
- */
+
 data class Achievement(
     val id: String,
     val title: String,
@@ -20,12 +17,10 @@ sealed class AchievementRequirement {
     data class DistanceWalked(val meters: Int) : AchievementRequirement()
     data class DaysPlayed(val days: Int) : AchievementRequirement()
     data object FirstTreasure : AchievementRequirement()
-    data object SpeedRunner : AchievementRequirement() // Collect treasure within 1 min of selecting
+    data object SpeedRunner : AchievementRequirement()
 }
 
-/**
- * Predefined achievements for the game
- */
+
 object Achievements {
     val ALL = listOf(
         Achievement(

@@ -11,7 +11,7 @@ import com.compose.geoquest.data.model.InventoryItem
         UserStatsEntity::class,
         SpawnedTreasureEntity::class
     ],
-    version = 3,
+    version = 1,
     exportSchema = false
 )
 abstract class GeoQuestDatabase : RoomDatabase() {

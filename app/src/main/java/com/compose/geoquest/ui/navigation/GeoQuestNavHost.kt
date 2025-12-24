@@ -9,9 +9,7 @@ import com.compose.geoquest.ui.game.MapScreen
 import com.compose.geoquest.ui.inventory.BackpackScreen
 import com.compose.geoquest.ui.settings.SettingsScreen
 
-/**
- * Navigation routes for the app
- */
+
 object Routes {
     const val MAP = "map"
     const val BACKPACK = "backpack"
