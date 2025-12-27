@@ -202,12 +202,3 @@ app/src/main/java/com/compose/geoquest/
 
 MIT License - see [LICENSE](LICENSE) file.
 
-## 👨‍💻 Author
-
-**Kareem**
-
----
-
-<p align="center">
-  Made with ❤️ in Egypt 🇪🇬
-</p>
