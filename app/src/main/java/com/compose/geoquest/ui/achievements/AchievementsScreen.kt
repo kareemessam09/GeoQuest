@@ -20,9 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -34,17 +36,24 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.compose.geoquest.data.local.UserStatsEntity
 import com.compose.geoquest.data.model.Achievement
+import com.compose.geoquest.util.ShareManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -55,6 +64,9 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val shareManager = remember { ShareManager(context) }
+
     val achievements by viewModel.achievements.collectAsState()
     val userStats by viewModel.userStats.collectAsState()
     val progress by viewModel.progress.collectAsState()
@@ -113,7 +125,10 @@ fun AchievementsScreen(
             }
 
             items(achievements) { achievement ->
-                AchievementCard(achievement = achievement)
+                AchievementCard(
+                    achievement = achievement,
+                    onShare = { shareManager.shareAchievement(it) }
+                )
             }
 
             item {
@@ -129,8 +144,14 @@ fun ProgressHeader(
     totalCount: Int,
     progress: Float
 ) {
+    val progressPercentage = (progress * 100).toInt()
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Achievement progress: $unlockedCount of $totalCount achievements unlocked, $progressPercentage percent complete"
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -143,7 +164,8 @@ fun ProgressHeader(
                 text = "$unlockedCount / $totalCount",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.semantics { heading() }
             )
             Text(
                 text = "Achievements Unlocked",
@@ -172,8 +194,14 @@ fun ProgressHeader(
 
 @Composable
 fun StatsCard(stats: UserStatsEntity) {
+    val distanceText = String.format(Locale.getDefault(), "%.1f kilometers", stats.totalDistanceWalked / 1000)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Your statistics: ${stats.totalTreasuresCollected} treasures collected, ${stats.totalPointsEarned} points earned, $distanceText walked"
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
@@ -182,7 +210,8 @@ fun StatsCard(stats: UserStatsEntity) {
             Text(
                 text = "📊 Your Stats",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.semantics { heading() }
             )
             Spacer(modifier = Modifier.height(12.dp))
             Row(
@@ -198,7 +227,7 @@ fun StatsCard(stats: UserStatsEntity) {
                     label = "Points"
                 )
                 StatItem(
-                    value = String.format("%.1f km", stats.totalDistanceWalked / 1000),
+                    value = String.format(Locale.getDefault(), "%.1f km", stats.totalDistanceWalked / 1000),
                     label = "Distance"
                 )
             }
@@ -224,12 +253,25 @@ fun StatItem(value: String, label: String) {
 }
 
 @Composable
-fun AchievementCard(achievement: Achievement) {
+fun AchievementCard(
+    achievement: Achievement,
+    onShare: (Achievement) -> Unit = {}
+) {
+    val statusDescription = if (achievement.isUnlocked) {
+        "Unlocked achievement: ${achievement.title}. ${achievement.description}"
+    } else {
+        "Locked achievement: ${achievement.title}. ${achievement.description}"
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize()
-            .alpha(if (achievement.isUnlocked) 1f else 0.6f),
+            .alpha(if (achievement.isUnlocked) 1f else 0.6f)
+            .semantics(mergeDescendants = true) {
+                contentDescription = statusDescription
+                stateDescription = if (achievement.isUnlocked) "Unlocked" else "Locked"
+            },
         colors = CardDefaults.cardColors(
             containerColor = if (achievement.isUnlocked)
                 MaterialTheme.colorScheme.surface
@@ -295,8 +337,17 @@ fun AchievementCard(achievement: Achievement) {
                 }
             }
 
+            // Share button for unlocked achievements
             if (achievement.isUnlocked) {
-                Text(text = "✅", fontSize = 24.sp)
+                IconButton(
+                    onClick = { onShare(achievement) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share achievement",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }

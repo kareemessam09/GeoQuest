@@ -43,6 +43,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -167,7 +175,9 @@ fun SettingsSection(
             text = title,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .semantics { heading() }
         )
         Card(
             modifier = Modifier
@@ -194,7 +204,13 @@ fun SwitchSettingItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
-            .padding(16.dp),
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$title. $subtitle"
+                role = Role.Switch
+                stateDescription = if (checked) "Enabled" else "Disabled"
+                toggleableState = if (checked) ToggleableState.On else ToggleableState.Off
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -213,7 +229,7 @@ fun SwitchSettingItem(
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = null // Handled by row click
         )
     }
 }
@@ -228,12 +244,17 @@ fun DropdownSettingItem(
     onValueSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.find { it.first == selectedValue }?.second ?: selectedValue
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = true }
-            .padding(16.dp),
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$title. $subtitle. Currently selected: $selectedLabel. Tap to change."
+                role = Role.DropdownList
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -261,6 +282,11 @@ fun DropdownSettingItem(
                     onClick = {
                         onValueSelected(value)
                         expanded = false
+                    },
+                    modifier = Modifier.semantics {
+                        if (value == selectedValue) {
+                            stateDescription = "Selected"
+                        }
                     }
                 )
             }

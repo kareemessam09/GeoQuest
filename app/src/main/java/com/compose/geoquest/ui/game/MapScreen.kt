@@ -25,10 +25,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backpack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -52,6 +54,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -62,12 +70,16 @@ import com.compose.geoquest.data.model.toProximityLevel
 import com.compose.geoquest.receiver.GpsStatusReceiver
 import com.compose.geoquest.service.GeofenceMonitorService
 import com.compose.geoquest.ui.components.AchievementNotification
+import com.compose.geoquest.ui.components.ImportSuccessDialog
+import com.compose.geoquest.ui.components.ImportTreasuresDialog
+import com.compose.geoquest.ui.components.ShareTreasuresDialog
 import com.compose.geoquest.ui.theme.CommonGray
 import com.compose.geoquest.ui.theme.InfoBlue
 import com.compose.geoquest.ui.theme.ProximityCool
 import com.compose.geoquest.ui.theme.ProximityHot
 import com.compose.geoquest.ui.theme.ProximityWarm
 import com.compose.geoquest.ui.theme.SuccessGreen
+import com.compose.geoquest.util.ShareManager
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -90,6 +102,15 @@ fun MapScreen(
     val showTreasureDialog by viewModel.showTreasureDialog.collectAsState()
     val collectedTreasure by viewModel.collectedTreasure.collectAsState()
     val unlockedAchievement by viewModel.unlockedAchievement.collectAsState()
+
+    // Treasure sharing state
+    val showShareDialog by viewModel.showShareDialog.collectAsState()
+    val showImportDialog by viewModel.showImportDialog.collectAsState()
+    val importResult by viewModel.importResult.collectAsState()
+    val importSuccessCount by viewModel.importSuccessCount.collectAsState()
+
+    // ShareManager for sharing achievements
+    val shareManager = remember { ShareManager(context) }
 
     val isGpsEnabled by GpsStatusReceiver.isGpsEnabled.collectAsState()
     var showGpsDialog by remember { mutableStateOf(false) }
@@ -239,6 +260,34 @@ fun MapScreen(
             horizontalArrangement = Arrangement.End
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Share treasures button
+                IconButton(
+                    onClick = { viewModel.showShareTreasuresDialog() },
+                    modifier = Modifier.background(
+                        MaterialTheme.colorScheme.surface,
+                        CircleShape
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "Share Treasures"
+                    )
+                }
+
+                // Import treasures button
+                IconButton(
+                    onClick = { viewModel.showImportTreasuresDialog() },
+                    modifier = Modifier.background(
+                        MaterialTheme.colorScheme.surface,
+                        CircleShape
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = "Import Treasures"
+                    )
+                }
+
                 IconButton(
                     onClick = onNavigateToAchievements,
                     modifier = Modifier.background(
@@ -347,8 +396,40 @@ fun MapScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(WindowInsets.statusBars.asPaddingValues())
-                .padding(top = 70.dp)
+                .padding(top = 70.dp),
+            onShare = { achievement -> shareManager.shareAchievement(achievement) }
         )
+
+        // Share treasures dialog
+        if (showShareDialog) {
+            ShareTreasuresDialog(
+                treasures = gameState.treasures.filter { !it.isCollected },
+                onShare = { treasures, senderName ->
+                    viewModel.shareTreasures(treasures, senderName)
+                },
+                onDismiss = { viewModel.dismissShareDialog() }
+            )
+        }
+
+        // Import treasures dialog
+        if (showImportDialog) {
+            ImportTreasuresDialog(
+                onImport = { code -> viewModel.parseShareCode(code) },
+                onDismiss = { viewModel.dismissImportDialog() },
+                importResult = importResult,
+                onConfirmImport = { sharedTreasures ->
+                    viewModel.confirmImportTreasures(sharedTreasures)
+                }
+            )
+        }
+
+        // Import success dialog
+        importSuccessCount?.let { count ->
+            ImportSuccessDialog(
+                count = count,
+                onDismiss = { viewModel.dismissImportSuccessDialog() }
+            )
+        }
     }
 }
 
@@ -376,10 +457,27 @@ fun DistanceCard(
         else -> Color.White
     }
 
+    // Accessibility: Build descriptive state for screen readers
+    val distanceText = when {
+        distance < 1000 -> "${distance.toInt()} meters"
+        else -> String.format(java.util.Locale.US, "%.1f kilometers", distance / 1000)
+    }
+    val proximityDescription = when (proximityLevel) {
+        ProximityLevel.BURNING -> "You're here! Ready to collect"
+        ProximityLevel.HOT -> "Very hot, very close to treasure"
+        ProximityLevel.WARM -> "Warm, getting closer"
+        ProximityLevel.COOL -> "Cool, moderate distance"
+        ProximityLevel.COLD -> "Cold, far from treasure"
+        ProximityLevel.FREEZING -> "Freezing, very far from treasure"
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Treasure navigation card. ${gameState.selectedTreasure?.name ?: "Unknown Treasure"}. Distance: $distanceText. Status: $proximityDescription"
+            },
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -391,13 +489,17 @@ fun DistanceCard(
                 text = gameState.selectedTreasure?.name ?: "Unknown Treasure",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = textOnBackground
+                color = textOnBackground,
+                modifier = Modifier.semantics { heading() }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.semantics {
+                    stateDescription = "Distance: $distanceText, $proximityDescription"
+                }
             ) {
                 Text(
                     text = when {
@@ -433,6 +535,10 @@ fun DistanceCard(
             ) {
                 Button(
                     onClick = onDismiss,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Cancel treasure navigation"
+                        role = Role.Button
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                     )
@@ -440,9 +546,22 @@ fun DistanceCard(
                     Text("Cancel", color = textOnBackground)
                 }
 
+                val collectButtonDescription = when {
+                    gameState.canCollectSelected -> "Open treasure chest button, ready to collect"
+                    gameState.isNearby -> "Getting close, need to be within 15 meters to collect"
+                    else -> "Get closer button, need to be within 15 meters to collect"
+                }
+
                 Button(
                     onClick = onCollect,
                     enabled = gameState.canCollectSelected,
+                    modifier = Modifier.semantics {
+                        contentDescription = collectButtonDescription
+                        role = Role.Button
+                        if (!gameState.canCollectSelected) {
+                            stateDescription = "Disabled, move closer to the treasure"
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)

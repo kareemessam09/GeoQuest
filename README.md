@@ -21,6 +21,12 @@ A location-based Android game where players hunt for virtual treasures at real-w
   <img src="settings screen.png" alt="Settings" width="200"/>
 </p>
 
+<p align="center">
+  <img src="share.png" alt="Share Treasures" width="200"/>
+  <img src="import.png" alt="Import Treasures" width="200"/>
+  <img src="widget.png" alt="Home Screen Widget" width="200"/>
+</p>
+
 ## 🎮 Features
 
 ### Core Gameplay
@@ -32,6 +38,17 @@ A location-based Android game where players hunt for virtual treasures at real-w
 - **Inventory System** - View collected treasures in backpack
 - **Dynamic Treasure Spawning** - Treasures spawn randomly around user's location
 - **Respawn Treasures** - Button to generate new treasure locations
+
+### Social Features
+- **Share Treasures** - Share treasure coordinates with friends via any app (WhatsApp, Twitter, etc.)
+- **Import Treasures** - Import treasure locations shared by friends using encoded share codes
+- **Share Achievements** - Brag about unlocked achievements on social media
+
+### Home Screen Widget
+- **Distance Widget** - Shows real-time distance to selected treasure on home screen
+- **Proximity Indicator** - Color-coded distance with emoji status (❄️ Freezing → 🎯 You're there!)
+- **Quick Access** - Tap widget to open the app
+- **Unit Support** - Respects metric/imperial settings
 
 ### Technical Features
 - **Foreground Service** - Background tracking with persistent notification
@@ -59,6 +76,7 @@ A location-based Android game where players hunt for virtual treasures at real-w
 | **Foreground Service** | Background processing |
 | **BroadcastReceiver** | System events (Boot, Geofence, GPS) |
 | **Navigation Compose** | Screen navigation |
+| **AppWidgetProvider** | Home screen widget |
 
 ## Architecture
 
@@ -87,7 +105,7 @@ A location-based Android game where players hunt for virtual treasures at real-w
 └──────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                        Background Services                                │
+│                     Background Services & Widget                          │
 │  ┌─────────────────────┐  ┌───────────────────────────────────────────┐  │
 │  │ GeofenceMonitor     │  │           BroadcastReceivers              │  │
 │  │    Service          │  │  ┌─────────────┐  ┌─────────────────────┐ │  │
@@ -96,26 +114,29 @@ A location-based Android game where players hunt for virtual treasures at real-w
 │  └──────────┬──────────┘  │  └─────────────┘  └─────────────────────┘ │  │
 │             │             │  ┌─────────────────────────────────────┐   │  │
 │             │             │  │       GpsStatusReceiver             │   │  │
-│             │             │  └─────────────────────────────────────┘   │  │
-│             │             └───────────────────────────────────────────┘  │
-└─────────────┼────────────────────────────────────────────────────────────┘
-              │
-┌─────────────┼────────────────────────────────────────────────────────────┐
-│             │              Utilities                                      │
-│  ┌──────────┴──────────┐  ┌───────────────┐  ┌─────────────────────────┐ │
+│  ┌──────────┴──────────┐  │  └─────────────────────────────────────┘   │  │
+│  │  TreasureDistance   │  └───────────────────────────────────────────┘  │
+│  │      Widget         │                                                  │
+│  │ (AppWidgetProvider) │                                                  │
+│  └─────────────────────┘                                                  │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                            Utilities                                      │
+│  ┌─────────────────────┐  ┌───────────────┐  ┌─────────────────────────┐ │
 │  │   GeofenceManager   │  │ SoundManager  │  │ ProximityNotification   │ │
 │  │  (Geofencing API)   │  │               │  │      Manager            │ │
 │  └─────────────────────┘  └───────────────┘  └─────────────────────────┘ │
-│  ┌─────────────────────┐  ┌───────────────────────────────────────────┐  │
-│  │HapticFeedbackManager│  │           TreasureSpawner                 │  │
-│  └─────────────────────┘  └───────────────────────────────────────────┘  │
+│  ┌─────────────────────┐  ┌───────────────┐  ┌─────────────────────────┐ │
+│  │HapticFeedbackManager│  │ ShareManager  │  │    TreasureSpawner      │ │
+│  └─────────────────────┘  └───────────────┘  └─────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Pattern:** MVVM (Model-View-ViewModel)  
 **DI:** Hilt  
-**State:** Kotlin StateFlow  
-**Background:** Foreground Service + BroadcastReceivers
+**State:** Kotlin StateFlow with single UI state pattern  
+**Background:** Foreground Service + BroadcastReceivers + AppWidget
 
 ## 📱 Screens
 
@@ -123,9 +144,12 @@ A location-based Android game where players hunt for virtual treasures at real-w
 |--------|-------------|
 | **Map** | Main game view with treasures, location, and controls |
 | **Backpack** | Inventory of collected treasures |
-| **Achievements** | Progress and unlocked achievements |
+| **Achievements** | Progress and unlocked achievements with share option |
 | **Settings** | App preferences and theme |
 | **Permissions** | Location permission flow |
+| **Share Dialog** | Select and share treasure locations with friends |
+| **Import Dialog** | Paste and import treasure codes from friends |
+| **Widget** | Home screen widget showing distance to selected treasure |
 
 ## 🚀 Getting Started
 
@@ -174,10 +198,13 @@ app/src/main/java/com/compose/geoquest/
 │   └── GpsStatusReceiver.kt
 ├── service/                    # Foreground service
 │   └── GeofenceMonitorService.kt
+├── widget/                     # Home screen widget
+│   └── TreasureDistanceWidget.kt
 ├── util/                       # Utility classes
 │   ├── GeofenceManager.kt
 │   ├── HapticFeedbackManager.kt
 │   ├── ProximityNotificationManager.kt
+│   ├── ShareManager.kt         # Treasure & achievement sharing
 │   └── SoundManager.kt
 └── ui/
     ├── game/                   # Map & game logic
@@ -185,6 +212,8 @@ app/src/main/java/com/compose/geoquest/
     ├── achievements/           # Achievements
     ├── settings/               # Settings
     ├── components/             # Reusable components
+    │   ├── AchievementNotification.kt
+    │   └── TreasureSharingDialogs.kt
     ├── navigation/             # Navigation
     └── theme/                  # Theme & colors
 ```
@@ -194,20 +223,28 @@ app/src/main/java/com/compose/geoquest/
 - **Android Jetpack** - Compose, Room, DataStore, Navigation, Hilt
 - **Location Services** - FusedLocationProvider, Geofencing API
 - **Background Processing** - Foreground Service, BroadcastReceivers
-- **Reactive Programming** - Kotlin Flows, StateFlow
+- **App Widgets** - AppWidgetProvider, RemoteViews, widget updates
+- **Reactive Programming** - Kotlin Flows, StateFlow, combine operators
 - **Clean Architecture** - MVVM, Repository pattern, Dependency Injection
 - **Modern Kotlin** - Coroutines, Sealed classes, Extension functions
+- **Sharing/Intents** - Share sheet integration, data encoding/decoding
+- **Accessibility** - Screen reader support, semantic content descriptions
+
+## ♿ Accessibility Features
+
+GeoQuest is built with accessibility in mind:
+
+| Feature | Implementation |
+|---------|----------------|
+| **Screen Reader Support** | All UI components have semantic content descriptions |
+| **Heading Structure** | Proper heading hierarchy for navigation |
+| **State Descriptions** | Toggle states, button states clearly announced |
+| **Live Regions** | Achievement notifications announced immediately |
+| **Merged Descendants** | Complex cards read as single coherent items |
+| **Role Annotations** | Buttons, switches, dropdowns properly identified |
+| **Haptic Feedback** | Physical vibrations for proximity (configurable) |
+| **High Contrast** | Material 3 theming with good color contrast |
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file.
-
-## 👨‍💻 Author
-
-**Kareem**
-
----
-
-<p align="center">
-  Made with ❤️ in Egypt 🇪🇬
-</p>

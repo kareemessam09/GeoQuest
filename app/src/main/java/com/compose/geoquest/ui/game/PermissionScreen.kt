@@ -23,6 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.compose.geoquest.util.PermissionUtils
@@ -88,7 +91,10 @@ fun PermissionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "Background location permission required. To notify you when near a treasure even when the app is closed, we need Allow all the time location permission."
+                    },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -102,7 +108,8 @@ fun PermissionScreen(
                 Text(
                     text = "Background Location Required",
                     style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -147,7 +154,10 @@ fun PermissionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "Location permission required. GeoQuest needs your location to show nearby treasures and detect when you find them."
+                    },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -161,7 +171,8 @@ fun PermissionScreen(
                 Text(
                     text = "Location Permission Required",
                     style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

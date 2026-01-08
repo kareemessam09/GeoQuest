@@ -34,6 +34,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -108,7 +111,10 @@ fun StatsHeader(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Backpack summary: $itemCount treasures collected with a total of $totalValue points"
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
@@ -152,8 +158,20 @@ fun StatsHeader(
 
 @Composable
 fun InventoryItemCard(item: InventoryItem) {
+    val itemTypeDescription = when (item.rewardType) {
+        "GOLD" -> "Gold"
+        "GEM" -> "Gem"
+        "ARTIFACT" -> "Artifact"
+        "RARE_ARTIFACT" -> "Rare Artifact"
+        else -> "Item"
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$itemTypeDescription: ${item.rewardName}, worth ${item.value} points, collected on ${formatDate(item.collectedAt)}"
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -214,7 +232,11 @@ fun InventoryItemCard(item: InventoryItem) {
 @Composable
 fun EmptyBackpack() {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Your backpack is empty. Go find some treasures on the map."
+            },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -228,7 +250,8 @@ fun EmptyBackpack() {
             Text(
                 text = "Your backpack is empty!",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.semantics { heading() }
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(

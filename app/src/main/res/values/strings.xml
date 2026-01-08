@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">GeoQuest</string>
+    <string name="widget_description">Shows distance to your selected treasure</string>
+    <string name="widget_name">Treasure Distance</string>
+    <string name="widget_treasure_icon_desc">Treasure icon</string>
+    <string name="widget_no_treasure">No treasure selected</string>
+    <string name="widget_distance_placeholder">--</string>
+    <string name="widget_open_app">Open app to start</string>
 </resources>

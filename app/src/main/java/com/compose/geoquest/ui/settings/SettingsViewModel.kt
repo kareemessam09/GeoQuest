@@ -1,9 +1,13 @@
 package com.compose.geoquest.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.compose.geoquest.data.preferences.UserPreferences
+import com.compose.geoquest.widget.TreasureDistanceWidget
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -12,6 +16,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
@@ -34,38 +39,40 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "metric")
 
     fun setHapticEnabled(enabled: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             userPreferences.setHapticEnabled(enabled)
         }
     }
 
     fun setSoundEnabled(enabled: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             userPreferences.setSoundEnabled(enabled)
         }
     }
 
     fun setHighAccuracyMode(enabled: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             userPreferences.setHighAccuracyMode(enabled)
         }
     }
 
     fun setDarkMode(mode: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             userPreferences.setDarkMode(mode)
         }
     }
 
     fun setNotificationEnabled(enabled: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             userPreferences.setNotificationEnabled(enabled)
         }
     }
 
     fun setUnits(units: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             userPreferences.setUnits(units)
+            // Update widget with new units
+            TreasureDistanceWidget.setUnits(context, units)
         }
     }
 }

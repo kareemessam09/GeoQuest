@@ -5,6 +5,7 @@ import com.compose.geoquest.data.local.SpawnedTreasureEntity
 import com.compose.geoquest.data.model.RewardType
 import com.compose.geoquest.data.model.Treasure
 import com.compose.geoquest.data.model.TreasureReward
+import com.compose.geoquest.util.SharedTreasure
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -172,6 +173,24 @@ class TreasureSpawner @Inject constructor(
         spawnedTreasureDao.markAsCollected(treasureId)
     }
 
+
+    suspend fun importSharedTreasures(sharedTreasures: List<SharedTreasure>): Int {
+        val treasures = sharedTreasures.map { shared ->
+            val reward = pickWeightedReward()
+            SpawnedTreasureEntity(
+                id = "shared_${UUID.randomUUID()}",
+                name = "📍 ${shared.name} (from ${shared.sharedBy})",
+                latitude = shared.latitude,
+                longitude = shared.longitude,
+                rewardType = reward.type.name,
+                rewardName = reward.name,
+                rewardValue = reward.value
+            )
+        }
+
+        spawnedTreasureDao.insertTreasures(treasures)
+        return treasures.size
+    }
 
 
     private fun SpawnedTreasureEntity.toTreasure(): Treasure {
