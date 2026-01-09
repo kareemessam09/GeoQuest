@@ -5,17 +5,57 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep line numbers for debugging crash reports
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ============== Hilt ==============
+-dontwarn dagger.hilt.**
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ComponentSupplier { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ============== Room ==============
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-dontwarn androidx.room.paging.**
+
+# ============== Kotlin Serialization ==============
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+
+# ============== Coroutines ==============
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepclassmembers class kotlinx.coroutines.** {
+    volatile <fields>;
+}
+
+# ============== OSMDroid ==============
+-keep class org.osmdroid.** { *; }
+-dontwarn org.osmdroid.**
+
+# ============== Google Play Services ==============
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.android.gms.**
+
+# ============== DataStore ==============
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
+    <fields>;
+}
+
+# ============== Compose ==============
+-dontwarn androidx.compose.**
+
+# ============== App Widget ==============
+-keep class com.compose.geoquest.widget.** { *; }
+
+# ============== Keep data classes ==============
+-keep class com.compose.geoquest.data.model.** { *; }
+-keep class com.compose.geoquest.data.local.** { *; }
+
+# ============== Optimize aggressively ==============
+-optimizationpasses 5
+-allowaccessmodification
+-repackageclasses ''

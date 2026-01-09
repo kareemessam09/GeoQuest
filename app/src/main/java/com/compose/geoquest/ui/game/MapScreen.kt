@@ -2,6 +2,7 @@ package com.compose.geoquest.ui.game
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -24,10 +25,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Backpack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -73,6 +75,9 @@ import com.compose.geoquest.ui.components.AchievementNotification
 import com.compose.geoquest.ui.components.ImportSuccessDialog
 import com.compose.geoquest.ui.components.ImportTreasuresDialog
 import com.compose.geoquest.ui.components.ShareTreasuresDialog
+import com.compose.geoquest.ui.components.SpeedDialItem
+import com.compose.geoquest.ui.components.SpeedDialMenu
+import com.compose.geoquest.ui.components.SpeedDialOverlay
 import com.compose.geoquest.ui.theme.CommonGray
 import com.compose.geoquest.ui.theme.InfoBlue
 import com.compose.geoquest.ui.theme.ProximityCool
@@ -114,6 +119,7 @@ fun MapScreen(
 
     val isGpsEnabled by GpsStatusReceiver.isGpsEnabled.collectAsState()
     var showGpsDialog by remember { mutableStateOf(false) }
+    var isSpeedDialExpanded by remember { mutableStateOf(false) }
 
     var hasInitiallyCentered by remember { mutableStateOf(false) }
 
@@ -251,43 +257,39 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize()
         )
 
+        // Overlay for speed dial background dismiss
+        SpeedDialOverlay(
+            isExpanded = isSpeedDialExpanded,
+            onDismiss = { isSpeedDialExpanded = false }
+        )
+
+        // Top Bar - Clean Design with Primary Actions + Speed Dial
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(WindowInsets.statusBars.asPaddingValues())
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .align(Alignment.TopCenter),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
         ) {
+            // Left side: Backpack (Primary Action)
+            IconButton(
+                onClick = onNavigateToBackpack,
+                modifier = Modifier.background(
+                    MaterialTheme.colorScheme.surface,
+                    CircleShape
+                )
+            ) {
+                Icon(
+                    Icons.Default.Inventory2,
+                    contentDescription = "Inventory"
+                )
+            }
+
+            // Right side: Primary actions + Speed Dial for secondary actions
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Share treasures button
-                IconButton(
-                    onClick = { viewModel.showShareTreasuresDialog() },
-                    modifier = Modifier.background(
-                        MaterialTheme.colorScheme.surface,
-                        CircleShape
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "Share Treasures"
-                    )
-                }
-
-                // Import treasures button
-                IconButton(
-                    onClick = { viewModel.showImportTreasuresDialog() },
-                    modifier = Modifier.background(
-                        MaterialTheme.colorScheme.surface,
-                        CircleShape
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.Download,
-                        contentDescription = "Import Treasures"
-                    )
-                }
-
+                // Achievements - Primary Action (visible)
                 IconButton(
                     onClick = onNavigateToAchievements,
                     modifier = Modifier.background(
@@ -301,21 +303,7 @@ fun MapScreen(
                     )
                 }
 
-                // Backpack button
-                IconButton(
-                    onClick = onNavigateToBackpack,
-                    modifier = Modifier.background(
-                        MaterialTheme.colorScheme.surface,
-                        CircleShape
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.Backpack,
-                        contentDescription = "Backpack"
-                    )
-                }
-
-                // Settings button
+                // Settings - Primary Action (visible)
                 IconButton(
                     onClick = onNavigateToSettings,
                     modifier = Modifier.background(
@@ -328,6 +316,24 @@ fun MapScreen(
                         contentDescription = "Settings"
                     )
                 }
+
+                // Speed Dial Menu for secondary actions (Share, Import)
+                SpeedDialMenu(
+                    isExpanded = isSpeedDialExpanded,
+                    onExpandChange = { isSpeedDialExpanded = it },
+                    items = listOf(
+                        SpeedDialItem(
+                            icon = Icons.Default.Share,
+                            label = "Share Treasures",
+                            onClick = { viewModel.showShareTreasuresDialog() }
+                        ),
+                        SpeedDialItem(
+                            icon = Icons.Default.Download,
+                            label = "Import Treasures",
+                            onClick = { viewModel.showImportTreasuresDialog() }
+                        )
+                    )
+                )
             }
         }
 
@@ -377,7 +383,27 @@ fun MapScreen(
             DistanceCard(
                 gameState = gameState,
                 onCollect = { viewModel.collectTreasure() },
-                onDismiss = { viewModel.clearSelection() }
+                onDismiss = { viewModel.clearSelection() },
+                onNavigateToGoogleMaps = {
+                    gameState.selectedTreasure?.let { treasure ->
+                        val gmmIntentUri = Uri.parse(
+                            "google.navigation:q=${treasure.latitude},${treasure.longitude}&mode=w"
+                        )
+                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+                            setPackage("com.google.android.apps.maps")
+                        }
+                        // If Google Maps is not installed, open in browser
+                        if (mapIntent.resolveActivity(context.packageManager) != null) {
+                            context.startActivity(mapIntent)
+                        } else {
+                            // Fallback to web Google Maps
+                            val webUri = Uri.parse(
+                                "https://www.google.com/maps/dir/?api=1&destination=${treasure.latitude},${treasure.longitude}&travelmode=walking"
+                            )
+                            context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+                        }
+                    }
+                }
             )
         }
 
@@ -437,7 +463,8 @@ fun MapScreen(
 fun DistanceCard(
     gameState: GameState,
     onCollect: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onNavigateToGoogleMaps: () -> Unit
 ) {
     val distance = gameState.distanceToTarget ?: 0f
     val proximityLevel = distance.toProximityLevel()
@@ -485,6 +512,7 @@ fun DistanceCard(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Treasure name centered
             Text(
                 text = gameState.selectedTreasure?.name ?: "Unknown Treasure",
                 style = MaterialTheme.typography.titleMedium,
@@ -492,6 +520,7 @@ fun DistanceCard(
                 color = textOnBackground,
                 modifier = Modifier.semantics { heading() }
             )
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -529,21 +558,44 @@ fun DistanceCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Action buttons row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Cancel button
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Cancel treasure navigation"
-                        role = Role.Button
-                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics {
+                            contentDescription = "Cancel treasure navigation"
+                            role = Role.Button
+                        },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                     )
                 ) {
                     Text("Cancel", color = textOnBackground)
+                }
+
+                // Google Maps button - compact with icon only
+                Button(
+                    onClick = onNavigateToGoogleMaps,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Open in Google Maps for walking directions"
+                        role = Role.Button
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Navigation,
+                        contentDescription = null,
+                        tint = textOnBackground
+                    )
                 }
 
                 val collectButtonDescription = when {
@@ -552,25 +604,28 @@ fun DistanceCard(
                     else -> "Get closer button, need to be within 15 meters to collect"
                 }
 
+                // Collect button
                 Button(
                     onClick = onCollect,
                     enabled = gameState.canCollectSelected,
-                    modifier = Modifier.semantics {
-                        contentDescription = collectButtonDescription
-                        role = Role.Button
-                        if (!gameState.canCollectSelected) {
-                            stateDescription = "Disabled, move closer to the treasure"
-                        }
-                    },
+                    modifier = Modifier
+                        .weight(1.5f)
+                        .semantics {
+                            contentDescription = collectButtonDescription
+                            role = Role.Button
+                            if (!gameState.canCollectSelected) {
+                                stateDescription = "Disabled, move closer to the treasure"
+                            }
+                        },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                     )
                 ) {
                     val buttonText = when {
-                        gameState.canCollectSelected -> "🎁 Open Chest!"
-                        gameState.isNearby -> "Getting close... (< 15m to collect)"
-                        else -> "Get Closer (< 15m)"
+                        gameState.canCollectSelected -> "Open Chest!"
+                        gameState.isNearby -> "Close..(< 20m)"
+                        else -> "Get Closer"
                     }
                     Text(
                         text = buttonText,
@@ -581,4 +636,3 @@ fun DistanceCard(
         }
     }
 }
-

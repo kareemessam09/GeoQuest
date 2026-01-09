@@ -50,7 +50,7 @@ object AppModule {
             GeoQuestDatabase::class.java,
             "geoquest_database"
         )
-        .fallbackToDestructiveMigration() // For development - use migrations in production
+        .fallbackToDestructiveMigration()
         .build()
     }
 

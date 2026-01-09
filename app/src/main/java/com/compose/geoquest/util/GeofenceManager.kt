@@ -18,10 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Manages geofences for treasure locations.
- * Uses Android's Geofencing API for battery-efficient location monitoring.
- */
+
 @Singleton
 class GeofenceManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -31,20 +28,15 @@ class GeofenceManager @Inject constructor(
         private const val TAG = "GeofenceManager"
         private const val PREFS_NAME = "geofence_treasures"
 
-        // Geofence radius in meters - minimum reliable radius is ~100m
         const val GEOFENCE_RADIUS_METERS = 100f
 
-        // How long the geofence should remain active (never expires)
         const val GEOFENCE_EXPIRATION_MS = Geofence.NEVER_EXPIRE
 
-        // Loitering delay for DWELL transition (30 seconds)
         const val LOITERING_DELAY_MS = 30000
 
-        // Responsiveness - how quickly geofence triggers (0 = best, uses more battery)
         const val RESPONSIVENESS_MS = 5000
 
         /**
-         * Get treasure name by ID from SharedPreferences
          */
         fun getTreasureName(context: Context, treasureId: String): String {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -68,9 +60,7 @@ class GeofenceManager @Inject constructor(
         )
     }
 
-    /**
-     * Register geofences for a list of treasures
-     */
+
     @SuppressLint("MissingPermission")
     fun addGeofences(treasures: List<Treasure>, onSuccess: () -> Unit = {}, onFailure: (Exception) -> Unit = {}) {
         Log.d(TAG, "addGeofences called with ${treasures.size} treasures")
@@ -80,14 +70,12 @@ class GeofenceManager @Inject constructor(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
         } else true
 
-        // Must have at least fine location permission
         if (!hasFine) {
             Log.w(TAG, "Missing fine location permission - cannot register geofences")
             onFailure(SecurityException("Missing fine location permission"))
             return
         }
 
-        // Warn if no background permission (geofences will only work in foreground)
         if (!hasBackground) {
             Log.w(TAG, "Missing background location permission - geofences will only trigger in foreground")
         }
@@ -97,7 +85,6 @@ class GeofenceManager @Inject constructor(
             return
         }
 
-        // Store treasure names for later retrieval by BroadcastReceiver
         saveTreasureNames(treasures)
 
         Log.d(TAG, "Creating geofences for treasures:")
@@ -131,9 +118,6 @@ class GeofenceManager @Inject constructor(
     }
 
 
-    /**
-     * Remove geofence for a specific treasure (e.g., when collected)
-     */
     fun removeGeofence(treasureId: String, onSuccess: () -> Unit = {}, onFailure: (Exception) -> Unit = {}) {
         // Remove from SharedPreferences
         prefs.edit().remove(treasureId).apply()
@@ -149,9 +133,7 @@ class GeofenceManager @Inject constructor(
             }
     }
 
-    /**
-     * Remove all registered geofences
-     */
+
     fun removeAllGeofences(onSuccess: () -> Unit = {}, onFailure: (Exception) -> Unit = {}) {
         // Clear all treasure names from SharedPreferences
         prefs.edit().clear().apply()
