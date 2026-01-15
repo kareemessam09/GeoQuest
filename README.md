@@ -38,11 +38,12 @@ A location-based Android game where players hunt for virtual treasures at real-w
 - **Inventory System** - View collected treasures in backpack
 - **Dynamic Treasure Spawning** - Treasures spawn randomly around user's location
 - **Respawn Treasures** - Button to generate new treasure locations
+- **Google Maps Navigation** - Open selected treasure in Google Maps for walking directions
 
 ### Social Features
 - **Share Treasures** - Share treasure coordinates with friends via any app (WhatsApp, Twitter, etc.)
 - **Import Treasures** - Import treasure locations shared by friends using encoded share codes
-- **Share Achievements** - Brag about unlocked achievements on social media
+- **Share Achievements** - Brag about unlocked achievements on social media (Twitter, Instagram, WhatsApp, etc.)
 
 ### Home Screen Widget
 - **Distance Widget** - Shows real-time distance to selected treasure on home screen
