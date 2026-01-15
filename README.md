@@ -11,7 +11,7 @@ A location-based Android game where players hunt for virtual treasures at real-w
 <p align="center">
   <img src="permission page.png" alt="Permission Screen" width="200"/>
   <img src="main screen.png" alt="Main Map Screen" width="200"/>
-  <img src="very close state.png" alt="Close to Treasure" width="200"/>
+  <img src="cold state.png" alt="Cold State" width="200"/>
   <img src="chest unlock.png" alt="Chest Unlock" width="200"/>
 </p>
 
@@ -19,6 +19,7 @@ A location-based Android game where players hunt for virtual treasures at real-w
   <img src="inventory page.png" alt="Inventory/Backpack" width="200"/>
   <img src="achievments page.png" alt="Achievements" width="200"/>
   <img src="settings screen.png" alt="Settings" width="200"/>
+  <img src="very close state.png" alt="Close to Treasure" width="200"/>
 </p>
 
 <p align="center">
