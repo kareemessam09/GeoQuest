@@ -2,251 +2,133 @@
   <img src="app/src/main/res/drawable/logo.png" alt="GeoQuest Logo" width="150"/>
 </p>
 
-# 🗺️ GeoQuest - GPS Treasure Hunt Game
+# GeoQuest - GPS Treasure Hunt Game
 
-A location-based Android game where players hunt for virtual treasures at real-world coordinates. Built with modern Android development practices demonstrating proficiency in GPS/Location services, Geofencing, and clean architecture.
+An Android app where you hunt for virtual treasures hidden at real-world GPS coordinates. Walk around, get close to a treasure, and collect it. Built with Jetpack Compose, OSMDroid, and Google's Geofencing API.
+
+No API keys needed — uses free OpenStreetMap tiles.
 
 ## Screenshots
 
 <p align="center">
-  <img src="permission page.png" alt="Permission Screen" width="200"/>
-  <img src="main screen.png" alt="Main Map Screen" width="200"/>
-  <img src="cold state.png" alt="Cold State" width="200"/>
-  <img src="chest unlock.png" alt="Chest Unlock" width="200"/>
+  <img src="screenshots/permission page.png" alt="Permission Screen" width="200"/>
+  <img src="screenshots/main screen.png" alt="Main Map Screen" width="200"/>
+  <img src="screenshots/cold state.png" alt="Cold State" width="200"/>
+  <img src="screenshots/chest unlock.png" alt="Chest Unlock" width="200"/>
 </p>
 
 <p align="center">
-  <img src="inventory page.png" alt="Inventory/Backpack" width="200"/>
-  <img src="achievments page.png" alt="Achievements" width="200"/>
-  <img src="settings screen.png" alt="Settings" width="200"/>
-  <img src="very close state.png" alt="Close to Treasure" width="200"/>
+  <img src="screenshots/inventory page.png" alt="Inventory/Backpack" width="200"/>
+  <img src="screenshots/achievments page.png" alt="Achievements" width="200"/>
+  <img src="screenshots/settings screen.png" alt="Settings" width="200"/>
+  <img src="screenshots/very close state.png" alt="Close to Treasure" width="200"/>
 </p>
 
 <p align="center">
-  <img src="share.png" alt="Share Treasures" width="200"/>
-  <img src="import.png" alt="Import Treasures" width="200"/>
-  <img src="widget.png" alt="Home Screen Widget" width="200"/>
+  <img src="screenshots/share.png" alt="Share Treasures" width="200"/>
+  <img src="screenshots/import.png" alt="Import Treasures" width="200"/>
+  <img src="screenshots/widget.png" alt="Home Screen Widget" width="200"/>
 </p>
 
-## 🎮 Features
+## How it works
 
-### Core Gameplay
-- **Interactive Map** - OpenStreetMap integration with OSMDroid (no API key required)
-- **Real-time Location Tracking** - FusedLocationProviderClient for accurate GPS
-- **Geofencing API** - System-level proximity detection (100m radius)
-- **"Hot & Cold" Navigation** - Visual and haptic feedback as you approach treasures
-- **Treasure Collection** - Collect treasures when within 20 meters
-- **Inventory System** - View collected treasures in backpack
-- **Dynamic Treasure Spawning** - Treasures spawn randomly around user's location
-- **Respawn Treasures** - Button to generate new treasure locations
-- **Google Maps Navigation** - Open selected treasure in Google Maps for walking directions
+- Treasures spawn randomly around your location (100m-1km away)
+- Tap a treasure on the map to start navigating toward it
+- The app shows distance and a "hot & cold" indicator as you walk closer
+- When you're within 20 meters, you can open the chest and collect the reward
+- Each treasure gives you a random reward (gold, gems, artifacts) worth points
 
-### Social Features
-- **Share Treasures** - Share treasure coordinates with friends via any app (WhatsApp, Twitter, etc.)
-- **Import Treasures** - Import treasure locations shared by friends using encoded share codes
-- **Share Achievements** - Brag about unlocked achievements on social media (Twitter, Instagram, WhatsApp, etc.)
+## Features
 
-### Home Screen Widget
-- **Distance Widget** - Shows real-time distance to selected treasure on home screen
-- **Proximity Indicator** - Color-coded distance with emoji status (❄️ Freezing → 🎯 You're there!)
-- **Quick Access** - Tap widget to open the app
-- **Unit Support** - Respects metric/imperial settings
+**Map & Navigation**
+- OpenStreetMap via OSMDroid (no API key)
+- Real-time GPS tracking with FusedLocationProviderClient
+- Google Maps integration for walking directions to a treasure
+- Hot & cold proximity feedback with haptic vibrations
 
-### Technical Features
-- **Foreground Service** - Background tracking with persistent notification
-- **Proximity Notifications** - Get notified when near a treasure
-- **Achievement System** - Unlockable achievements (First Find, Explorer, Speed Runner, etc.)
-- **User Statistics** - Track distance walked, treasures collected, points earned
-- **GPS Status Monitoring** - Detects GPS on/off changes with prompts
-- **Dark/Light Theme** - Full theme support with system default option
-- **Settings** - Haptic feedback, sound effects, notifications, distance units
+**Geofencing**
+- Uses Google's Geofencing API for system-level proximity alerts (100m radius)
+- Foreground service keeps tracking in the background
+- Boot receiver re-registers geofences after device restart
 
-## 🛠️ Tech Stack
+**Social**
+- Share treasure locations with friends via encoded share codes
+- Import treasures from friends by pasting the share code
+- Share unlocked achievements on social media
 
-| Technology | Purpose |
-|------------|---------|
-| **Kotlin** | Primary language |
-| **Jetpack Compose** | Declarative UI |
-| **Material 3** | Modern UI components |
-| **Hilt** | Dependency Injection |
-| **Room** | Local database |
-| **DataStore** | Preferences storage |
-| **Kotlin Flows/StateFlow** | Reactive state management |
-| **OSMDroid** | OpenStreetMap SDK (free) |
-| **FusedLocationProvider** | GPS location services |
-| **Geofencing API** | Proximity detection |
-| **Foreground Service** | Background processing |
-| **BroadcastReceiver** | System events (Boot, Geofence, GPS) |
-| **Navigation Compose** | Screen navigation |
-| **AppWidgetProvider** | Home screen widget |
+**Gameplay**
+- Inventory/backpack to view collected treasures
+- Achievement system (First Find, Explorer, Speed Runner, etc.)
+- User stats: distance walked, treasures collected, points earned
+- Respawn button to generate new treasure locations
+
+**Widget**
+- Home screen widget showing real-time distance to selected treasure
+- Color-coded proximity with emoji status
+- Tap to open the app
+
+**Other**
+- Dark/light theme support
+- Settings for haptic feedback, sound, notifications, distance units
+- Proximity notifications when near a treasure
+- GPS status monitoring with enable prompts
+
+## Tech Stack
+
+- **Language:** Kotlin
+- **UI:** Jetpack Compose + Material 3
+- **DI:** Hilt
+- **Database:** Room
+- **Preferences:** DataStore
+- **Maps:** OSMDroid (OpenStreetMap)
+- **Location:** FusedLocationProvider + Geofencing API
+- **Background:** Foreground Service + BroadcastReceivers
+- **Widget:** AppWidgetProvider + RemoteViews
 
 ## Architecture
 
+MVVM with a single-UI-state pattern in each ViewModel. Repositories handle data access, Hilt handles dependency injection, and Kotlin Flows drive reactive state.
+
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                              UI Layer                                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
-│  │  MapScreen  │  │  Backpack   │  │ Achievements│  │    Settings     │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘  │
-│         │                │                │                   │           │
-│  ┌──────┴──────┐  ┌──────┴──────┐  ┌──────┴──────┐  ┌────────┴────────┐  │
-│  │GameViewModel│  │InventoryVM │  │AchievementVM│  │  SettingsVM     │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘  │
-└─────────┼────────────────┼────────────────┼──────────────────┼───────────┘
-          │                │                │                  │
-┌─────────┼────────────────┼────────────────┼──────────────────┼───────────┐
-│         │           Domain/Data Layer     │                  │           │
-│  ┌──────┴──────┐  ┌──────┴──────┐  ┌──────┴──────┐  ┌────────┴────────┐  │
-│  │ LocationRepo│  │InventoryRepo│  │AchievementRp│  │  UserPrefsRepo  │  │
-│  └──────┬──────┘  └─────────────┘  └─────────────┘  └─────────────────┘  │
-│         │                                                                 │
-│  ┌──────┴──────┐  ┌───────────────────────────────────────────────────┐  │
-│  │FusedLocation│  │              Room Database                        │  │
-│  │  Provider   │  │  (InventoryDao, AchievementDao, UserStatsDao)     │  │
-│  └─────────────┘  └───────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────┐
-│                     Background Services & Widget                          │
-│  ┌─────────────────────┐  ┌───────────────────────────────────────────┐  │
-│  │ GeofenceMonitor     │  │           BroadcastReceivers              │  │
-│  │    Service          │  │  ┌─────────────┐  ┌─────────────────────┐ │  │
-│  │  (Foreground)       │  │  │BootReceiver │  │GeofenceBroadcast    │ │  │
-│  │                     │  │  │             │  │    Receiver         │ │  │
-│  └──────────┬──────────┘  │  └─────────────┘  └─────────────────────┘ │  │
-│             │             │  ┌─────────────────────────────────────┐   │  │
-│             │             │  │       GpsStatusReceiver             │   │  │
-│  ┌──────────┴──────────┐  │  └─────────────────────────────────────┘   │  │
-│  │  TreasureDistance   │  └───────────────────────────────────────────┘  │
-│  │      Widget         │                                                  │
-│  │ (AppWidgetProvider) │                                                  │
-│  └─────────────────────┘                                                  │
-└──────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────┐
-│                            Utilities                                      │
-│  ┌─────────────────────┐  ┌───────────────┐  ┌─────────────────────────┐ │
-│  │   GeofenceManager   │  │ SoundManager  │  │ ProximityNotification   │ │
-│  │  (Geofencing API)   │  │               │  │      Manager            │ │
-│  └─────────────────────┘  └───────────────┘  └─────────────────────────┘ │
-│  ┌─────────────────────┐  ┌───────────────┐  ┌─────────────────────────┐ │
-│  │HapticFeedbackManager│  │ ShareManager  │  │    TreasureSpawner      │ │
-│  └─────────────────────┘  └───────────────┘  └─────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────────┘
+UI (Compose) → ViewModel (StateFlow) → Repository → Room / Location APIs
 ```
 
-**Pattern:** MVVM (Model-View-ViewModel)  
-**DI:** Hilt  
-**State:** Kotlin StateFlow with single UI state pattern  
-**Background:** Foreground Service + BroadcastReceivers + AppWidget
+Background work runs in a Foreground Service with BroadcastReceivers for geofence events, boot completed, and GPS status changes.
 
-## 📱 Screens
-
-| Screen | Description |
-|--------|-------------|
-| **Map** | Main game view with treasures, location, and controls |
-| **Backpack** | Inventory of collected treasures |
-| **Achievements** | Progress and unlocked achievements with share option |
-| **Settings** | App preferences and theme |
-| **Permissions** | Location permission flow |
-| **Share Dialog** | Select and share treasure locations with friends |
-| **Import Dialog** | Paste and import treasure codes from friends |
-| **Widget** | Home screen widget showing distance to selected treasure |
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Android Studio Hedgehog or newer
-- Android SDK 28+ (Android 9.0)
-- Physical device recommended for GPS testing
-
-### Installation
-
-```bash
-git clone https://github.com/yourusername/GeoQuest.git
-cd GeoQuest
-```
-
-Open in Android Studio → Sync Gradle → Run
-
-> **Note:** No API keys required! Uses free OpenStreetMap.
-
-### Required Permissions
-
-| Permission | Purpose |
-|------------|---------|
-| `ACCESS_FINE_LOCATION` | Precise GPS |
-| `ACCESS_COARSE_LOCATION` | Approximate location |
-| `ACCESS_BACKGROUND_LOCATION` | Background tracking (Android 10+) |
-| `POST_NOTIFICATIONS` | Proximity alerts (Android 13+) |
-| `FOREGROUND_SERVICE_LOCATION` | Background service |
-| `RECEIVE_BOOT_COMPLETED` | Re-register geofences after reboot |
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 app/src/main/java/com/compose/geoquest/
-├── GeoQuestApplication.kt
-├── MainActivity.kt
-├── data/
-│   ├── local/                  # Room database & DAOs
-│   ├── model/                  # Data models
-│   ├── preferences/            # DataStore preferences
-│   └── repository/             # Repositories
-├── di/                         # Hilt modules
-├── receiver/                   # BroadcastReceivers
-│   ├── BootReceiver.kt
-│   ├── GeofenceBroadcastReceiver.kt
-│   └── GpsStatusReceiver.kt
-├── service/                    # Foreground service
-│   └── GeofenceMonitorService.kt
-├── widget/                     # Home screen widget
-│   └── TreasureDistanceWidget.kt
-├── util/                       # Utility classes
-│   ├── GeofenceManager.kt
-│   ├── HapticFeedbackManager.kt
-│   ├── ProximityNotificationManager.kt
-│   ├── ShareManager.kt         # Treasure & achievement sharing
-│   └── SoundManager.kt
+├── data/          # Room DB, DAOs, models, preferences, repositories
+├── di/            # Hilt modules
+├── receiver/      # BroadcastReceivers (Boot, Geofence, GPS status)
+├── service/       # Foreground service for geofence monitoring
+├── widget/        # Home screen widget
+├── util/          # GeofenceManager, SoundManager, HapticFeedback, ShareManager
 └── ui/
-    ├── game/                   # Map & game logic
-    ├── inventory/              # Backpack
-    ├── achievements/           # Achievements
-    ├── settings/               # Settings
-    ├── components/             # Reusable components
-    │   ├── AchievementNotification.kt
-    │   └── TreasureSharingDialogs.kt
-    ├── navigation/             # Navigation
-    └── theme/                  # Theme & colors
+    ├── game/          # Map screen + game logic
+    ├── inventory/     # Backpack
+    ├── achievements/  # Achievements screen
+    ├── settings/      # Settings screen
+    ├── components/    # Reusable UI (dialogs, notifications, speed dial)
+    ├── navigation/    # NavHost
+    └── theme/         # Colors, typography
 ```
 
-## 🎯 Skills Demonstrated
+## Running it
 
-- **Android Jetpack** - Compose, Room, DataStore, Navigation, Hilt
-- **Location Services** - FusedLocationProvider, Geofencing API
-- **Background Processing** - Foreground Service, BroadcastReceivers
-- **App Widgets** - AppWidgetProvider, RemoteViews, widget updates
-- **Reactive Programming** - Kotlin Flows, StateFlow, combine operators
-- **Clean Architecture** - MVVM, Repository pattern, Dependency Injection
-- **Modern Kotlin** - Coroutines, Sealed classes, Extension functions
-- **Sharing/Intents** - Share sheet integration, data encoding/decoding
-- **Accessibility** - Screen reader support, semantic content descriptions
+Clone the repo, open in Android Studio, sync Gradle, and run on a physical device (GPS doesn't work well on emulators).
 
-## ♿ Accessibility Features
+```bash
+git clone https://github.com/yourusername/GeoQuest.git
+```
 
-GeoQuest is built with accessibility in mind:
+Requires Android SDK 28+ (Android 9.0).
 
-| Feature | Implementation |
-|---------|----------------|
-| **Screen Reader Support** | All UI components have semantic content descriptions |
-| **Heading Structure** | Proper heading hierarchy for navigation |
-| **State Descriptions** | Toggle states, button states clearly announced |
-| **Live Regions** | Achievement notifications announced immediately |
-| **Merged Descendants** | Complex cards read as single coherent items |
-| **Role Annotations** | Buttons, switches, dropdowns properly identified |
-| **Haptic Feedback** | Physical vibrations for proximity (configurable) |
-| **High Contrast** | Material 3 theming with good color contrast |
+## Permissions
 
-## 📄 License
+The app needs location access (fine + background) to track your position and detect when you're near a treasure. Background location is needed so geofences work when the app isn't open. Notification permission is used for proximity alerts on Android 13+.
+
+## License
 
 MIT License - see [LICENSE](LICENSE) file.
